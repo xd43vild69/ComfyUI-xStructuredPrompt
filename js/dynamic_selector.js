@@ -40,6 +40,36 @@ app.registerExtension({
                 
                 return r;
             };
+
+            const onConfigure = nodeType.prototype.onConfigure;
+            
+            nodeType.prototype.onConfigure = function (info) {
+                // info.widgets_values contiene los valores guardados del nodo al cargar el workflow
+                if (info && info.widgets_values) {
+                    let currentCount = 0;
+                    for (let w of this.widgets) {
+                        if (w.name && w.name.startsWith("string_")) {
+                            currentCount++;
+                        }
+                    }
+                    
+                    // Asumimos que los primeros dos widgets son active_index y el botón "Add".
+                    // Por ende, la cantidad de "string_X" que había al guardar es el total menos 2.
+                    const expectedStrings = info.widgets_values.length - 2;
+                    
+                    // Añadimos dinámicamente las cajas faltantes antes de que LiteGraph restaure sus valores
+                    while (currentCount < expectedStrings) {
+                        currentCount++;
+                        const newWidgetName = "string_" + currentCount;
+                        ComfyWidgets["STRING"](this, newWidgetName, ["STRING", { multiline: true }], app);
+                    }
+                }
+                
+                // Llamamos a la función original para que finalice la restauración de los datos en las cajas
+                if (onConfigure) {
+                    return onConfigure.apply(this, arguments);
+                }
+            };
         }
     }
 });
