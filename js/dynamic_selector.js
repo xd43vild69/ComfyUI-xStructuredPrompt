@@ -19,12 +19,16 @@ app.registerExtension({
                     }
                     
                     const newIndex = count + 1;
+                    const newLabelName = "label_" + newIndex;
                     const newWidgetName = "string_" + newIndex;
                     
+                    // Añadir la etiqueta (label) y la nueva caja (string)
+                    ComfyWidgets["STRING"](this, newLabelName, ["STRING", { default: "Estilo " + newIndex }], app);
                     ComfyWidgets["STRING"](this, newWidgetName, ["STRING", { multiline: true }], app);
                     
                     const size = this.computeSize();
-                    this.setSize([size[0], this.size[1] + 60]); 
+                    // Aumentamos el tamaño tomando en cuenta ambas cajas
+                    this.setSize([size[0], this.size[1] + 90]); 
                     this.setDirtyCanvas(true, true);
                 });
                 
@@ -40,9 +44,6 @@ app.registerExtension({
             const onConfigure = nodeType.prototype.onConfigure;
             
             nodeType.prototype.onConfigure = function (info) {
-                // LiteGraph internamente intenta asignar los valores antes de llamar a onConfigure
-                // Como las cajas dinámicas aún no existían, ignoró sus textos.
-                
                 if (info && info.widgets_values) {
                     let currentCount = 0;
                     for (let w of this.widgets) {
@@ -51,16 +52,18 @@ app.registerExtension({
                         }
                     }
                     
-                    const expectedStrings = info.widgets_values.length - 2;
+                    // Ahora cada estilo usa 2 widgets (label y string)
+                    const expectedStrings = Math.floor((info.widgets_values.length - 2) / 2);
                     
-                    // 1. Recrear las cajas faltantes
                     while (currentCount < expectedStrings) {
                         currentCount++;
+                        const newLabelName = "label_" + currentCount;
                         const newWidgetName = "string_" + currentCount;
+                        
+                        ComfyWidgets["STRING"](this, newLabelName, ["STRING", { default: "Estilo " + currentCount }], app);
                         ComfyWidgets["STRING"](this, newWidgetName, ["STRING", { multiline: true }], app);
                     }
                     
-                    // 2. Forzar la asignación manual de los valores guardados a TODOS los widgets ahora que existen
                     for (let i = 0; i < this.widgets.length; i++) {
                         if (this.widgets[i] && info.widgets_values[i] !== undefined) {
                             this.widgets[i].value = info.widgets_values[i];

@@ -36,6 +36,7 @@ class MultilineStringSelector:
         return {
             "required": {
                 "active_index": ("INT", {"default": 1, "min": 1, "max": 99, "step": 1}),
+                "label_1": ("STRING", {"default": "Estilo 1"}),
                 "string_1": ("STRING", {"multiline": True, "default": ""}),
             },
             "hidden": {
@@ -49,7 +50,7 @@ class MultilineStringSelector:
     FUNCTION = "select_string"
     CATEGORY = "xStructuredPrompt"
 
-    def select_string(self, active_index, string_1, extra_pnginfo=None, unique_id=None, **kwargs):
+    def select_string(self, active_index, label_1, string_1, extra_pnginfo=None, unique_id=None, **kwargs):
         # Por defecto usamos string_1
         strings = [string_1]
         
@@ -60,13 +61,17 @@ class MultilineStringSelector:
             for node in nodes:
                 if str(node.get("id")) == str(unique_id):
                     widgets_values = node.get("widgets_values", [])
-                    # Estructura del nodo:
+                    # Estructura del nodo ahora:
                     # [0]: active_index
                     # [1]: botón "Add"
-                    # [2]: string_1
-                    # [3]: string_2, etc.
+                    # [2]: label_1
+                    # [3]: string_1
+                    # [4]: label_2
+                    # [5]: string_2, etc.
                     if len(widgets_values) > 2:
-                        strings = widgets_values[2:]
+                        all_dynamic = widgets_values[2:]
+                        # Los strings multilínea están en las posiciones impares de all_dynamic (índices 1, 3, 5...)
+                        strings = all_dynamic[1::2]
                     break
         
         index = active_index - 1
