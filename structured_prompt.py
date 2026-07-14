@@ -16,7 +16,6 @@ class StructuredPromptBuilder:
     CATEGORY = "xStructuredPrompt"
 
     def build_prompt(self, camera_and_lens=None, subject_and_action=None, style_and_lighting=None):
-        # Recolectamos las partes validando que no sean None ni estén vacías
         parts = []
         if camera_and_lens and isinstance(camera_and_lens, str) and camera_and_lens.strip():
             parts.append(camera_and_lens.strip())
@@ -27,7 +26,6 @@ class StructuredPromptBuilder:
         if style_and_lighting and isinstance(style_and_lighting, str) and style_and_lighting.strip():
             parts.append(style_and_lighting.strip())
             
-        # Unimos usando coma y espacio
         result = ", ".join(parts)
         
         return (result,)
@@ -37,12 +35,12 @@ class MultilineStringSelector:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "active_index": ("INT", {"default": 1, "min": 1, "max": 5, "step": 1}),
+                "active_index": ("INT", {"default": 1, "min": 1, "max": 99, "step": 1}),
                 "string_1": ("STRING", {"multiline": True, "default": ""}),
-                "string_2": ("STRING", {"multiline": True, "default": ""}),
-                "string_3": ("STRING", {"multiline": True, "default": ""}),
-                "string_4": ("STRING", {"multiline": True, "default": ""}),
-                "string_5": ("STRING", {"multiline": True, "default": ""}),
+            },
+            "hidden": {
+                "extra_pnginfo": "EXTRA_PNGINFO",
+                "unique_id": "UNIQUE_ID"
             }
         }
     
@@ -51,18 +49,33 @@ class MultilineStringSelector:
     FUNCTION = "select_string"
     CATEGORY = "xStructuredPrompt"
 
-    def select_string(self, active_index, string_1, string_2, string_3, string_4, string_5):
-        # Agrupamos los strings en una lista
-        strings = [string_1, string_2, string_3, string_4, string_5]
+    def select_string(self, active_index, string_1, extra_pnginfo=None, unique_id=None, **kwargs):
+        # Por defecto usamos string_1
+        strings = [string_1]
         
-        # Ajustamos el índice (el usuario ve de 1 a 5, en Python es de 0 a 4)
-        # Nos aseguramos de que el índice no se salga de los límites
-        index = max(0, min(4, active_index - 1))
+        # En ComfyUI, los campos dinámicos de JS que no están en INPUT_TYPES
+        # no se envían a kwargs. Debemos extraerlos del grafo visual guardado en extra_pnginfo.
+        if extra_pnginfo and unique_id:
+            nodes = extra_pnginfo.get("workflow", {}).get("nodes", [])
+            for node in nodes:
+                if str(node.get("id")) == str(unique_id):
+                    widgets_values = node.get("widgets_values", [])
+                    # Estructura del nodo:
+                    # [0]: active_index
+                    # [1]: botón "Add"
+                    # [2]: string_1
+                    # [3]: string_2, etc.
+                    if len(widgets_values) > 2:
+                        strings = widgets_values[2:]
+                    break
         
-        # Seleccionamos el string activo
+        index = active_index - 1
+        
+        if index < 0 or index >= len(strings):
+            return ("",)
+            
         result = strings[index]
         
-        # Si por alguna razón no es un string válido, devolvemos vacío
         if not isinstance(result, str):
             result = ""
             
