@@ -1,5 +1,5 @@
 ---
-name: comfyui-node
+name: architecture
 description: Scaffold new custom ComfyUI nodes from scratch, generating the complete Python boilerplate (class with INPUT_TYPES, RETURN_TYPES, FUNCTION, CATEGORY, plus NODE_CLASS_MAPPINGS and NODE_DISPLAY_NAME_MAPPINGS) and the surrounding pack structure (__init__.py, pyproject.toml). Use this skill whenever the user wants to create, build, write, or scaffold a new ComfyUI custom node or node pack — including prompt-building/composition nodes, image/tensor nodes, or I/O utility nodes — even if they don't say the word "skill". Trigger on phrases like "make a ComfyUI node", "custom node for ComfyUI", "new node that does X", "node pack", or when they describe node behavior (inputs, outputs, a category) in a ComfyUI context.
 ---
 
