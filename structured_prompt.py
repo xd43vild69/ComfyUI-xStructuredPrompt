@@ -1,3 +1,18 @@
+import torch
+import comfy.model_management
+
+try:
+    from nodes import MAX_RESOLUTION
+except ImportError:
+    MAX_RESOLUTION = 16384
+
+# Canales del latente segun la familia de modelos.
+LATENT_CHANNELS = {
+    "SD1.5 / SDXL (4ch)": 4,
+    "SD3 / Flux (16ch)": 16,
+}
+
+
 class StructuredPromptBuilder:
     @classmethod
     def INPUT_TYPES(s):
@@ -83,5 +98,39 @@ class MultilineStringSelector:
         
         if not isinstance(result, str):
             result = ""
-            
+
         return (result,)
+
+class EmptyLatentInverse:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "width": ("INT", {"default": 1024, "min": 16, "max": MAX_RESOLUTION, "step": 8, "tooltip": "Ancho en pixeles. Con modelos de 16ch conviene usar multiplos de 16."}),
+                "height": ("INT", {"default": 1024, "min": 16, "max": MAX_RESOLUTION, "step": 8, "tooltip": "Alto en pixeles. Con modelos de 16ch conviene usar multiplos de 16."}),
+                "inverse": ("BOOLEAN", {"default": False, "label_on": "invertido", "label_off": "normal", "tooltip": "Intercambia width y height para probar el formato contrario sin reescribir los valores."}),
+                "batch_size": ("INT", {"default": 1, "min": 1, "max": 4096, "tooltip": "Cantidad de latentes en el lote."}),
+                "model_type": (list(LATENT_CHANNELS.keys()), {"default": "SD1.5 / SDXL (4ch)", "tooltip": "Define los canales del latente. SD1.5 y SDXL usan 4; SD3 y Flux usan 16."}),
+            }
+        }
+
+    RETURN_TYPES = ("LATENT", "INT", "INT")
+    RETURN_NAMES = ("latent", "width", "height")
+    OUTPUT_TOOLTIPS = ("El lote de latentes vacios.", "Ancho efectivo tras aplicar inverse.", "Alto efectivo tras aplicar inverse.")
+    FUNCTION = "generate"
+    CATEGORY = "xStructuredPrompt/utils"
+    DESCRIPTION = "Crea un lote de latentes vacios con un toggle 'inverse' que intercambia ancho y alto, para alternar entre formato horizontal y vertical sin reescribir los valores."
+
+    def generate(self, width, height, inverse, batch_size, model_type):
+        if inverse:
+            width, height = height, width
+
+        channels = LATENT_CHANNELS[model_type]
+
+        latent = torch.zeros(
+            [batch_size, channels, height // 8, width // 8],
+            device=comfy.model_management.intermediate_device(),
+            dtype=comfy.model_management.intermediate_dtype(),
+        )
+
+        return ({"samples": latent, "downscale_ratio_spacial": 8}, width, height)
