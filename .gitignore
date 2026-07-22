@@ -1,0 +1,10 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# macOS (AppleDouble / metadata)
+._*
+.DS_Store
+
+# Claude Code worktrees: directorios de trabajo locales, nunca deben versionarse
+.claude/worktrees/
